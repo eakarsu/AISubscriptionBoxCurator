@@ -144,6 +144,54 @@ const featureConfig = {
     isAction: true,
     actionLabel: 'Analyze Customer Segments',
   },
+  'customer-ltv': {
+    title: 'Customer LTV Predictor',
+    desc: 'Predict customer lifetime value with acquisition spend cap recommendations.',
+    icon: FiTrendingUp,
+    endpoint: '/api/ai/customer-ltv',
+    fields: [
+      { name: 'customer_id', label: 'Customer', type: 'customer-select' },
+      { name: 'horizon_months', label: 'Horizon (months)', type: 'number', placeholder: '24' },
+    ],
+    needsCustomers: true,
+  },
+  'unboxing-arrangement': {
+    title: 'Unboxing Arrangement',
+    desc: 'AI-suggested physical layout and reveal sequence for an unboxing experience.',
+    icon: FiBox,
+    endpoint: '/api/ai/unboxing-arrangement',
+    fields: [
+      { name: 'box_theme', label: 'Box Theme', type: 'text', placeholder: 'e.g. Cozy Autumn Self-Care' },
+      { name: 'item_list', label: 'Item List', type: 'textarea', placeholder: 'Comma-separated or one per line' },
+      { name: 'audience', label: 'Audience', type: 'text', placeholder: 'e.g. Wellness gen-z' },
+      { name: 'aesthetic', label: 'Aesthetic', type: 'select', options: ['Minimalist', 'Luxurious', 'Playful', 'Earthy', 'Modern'] },
+    ],
+  },
+  'competitor-price-monitor': {
+    title: 'Competitor Price Monitor',
+    desc: 'Compare our box vs. competitor offerings and recommend a pricing posture.',
+    icon: FiDollarSign,
+    endpoint: '/api/ai/competitor-price-monitor',
+    fields: [
+      { name: 'our_box', label: 'Our Box', type: 'text', placeholder: 'e.g. Wellness monthly box' },
+      { name: 'our_price', label: 'Our Price (USD)', type: 'number', placeholder: '49.99' },
+      { name: 'market_segment', label: 'Market Segment', type: 'text', placeholder: 'e.g. premium wellness' },
+      { name: 'competitors', label: 'Competitors (JSON or list)', type: 'textarea', placeholder: '[{"name":"BrandA","price":45,"items":10}, ...]' },
+    ],
+  },
+  'preference-bandit': {
+    title: 'Preference Bandit',
+    desc: 'Bandit-style scoring step over candidate boxes for preference learning.',
+    icon: FiActivity,
+    endpoint: '/api/ai/preference-bandit',
+    fields: [
+      { name: 'customer_id', label: 'Customer', type: 'customer-select' },
+      { name: 'context', label: 'Context', type: 'text', placeholder: 'e.g. October cycle, returning subscriber' },
+      { name: 'arms', label: 'Arms (JSON)', type: 'textarea', placeholder: '[{"id":"A","pulls":12,"rewards":7}, {"id":"B","pulls":3,"rewards":2}]' },
+      { name: 'candidates', label: 'Candidates (JSON)', type: 'textarea', placeholder: '[{"id":"C","description":"Eco self-care"}]' },
+    ],
+    needsCustomers: true,
+  },
 };
 
 export default function AIFeaturePage() {
@@ -200,6 +248,25 @@ export default function AIFeaturePage() {
       if (payload.count) payload.count = parseInt(payload.count);
       if (payload.customer_id) payload.customer_id = parseInt(payload.customer_id);
       if (payload.product_id) payload.product_id = parseInt(payload.product_id);
+      if (payload.horizon_months) payload.horizon_months = parseInt(payload.horizon_months);
+      if (payload.item_list && typeof payload.item_list === 'string') {
+        payload.item_list = payload.item_list
+          .split(/\r?\n|,/)
+          .map((s) => s.trim())
+          .filter(Boolean);
+      }
+      ['arms', 'candidates', 'competitors'].forEach((k) => {
+        if (payload[k] && typeof payload[k] === 'string') {
+          const trimmed = payload[k].trim();
+          if (!trimmed) { delete payload[k]; return; }
+          try {
+            payload[k] = JSON.parse(trimmed);
+          } catch {
+            payload[k] = trimmed.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+          }
+        }
+      });
+      if (payload.our_price) payload.our_price = parseFloat(payload.our_price);
 
       const res = await api.post(config.endpoint, payload);
       const newResult = { ...res.data, timestamp: new Date().toLocaleString() };
@@ -207,7 +274,11 @@ export default function AIFeaturePage() {
       setHistory((prev) => [newResult, ...prev]);
       toast.success(`${config.title} complete`);
     } catch (err) {
-      toast.error(err.response?.data?.error || `${config.title} failed`);
+      const status = err.response?.status;
+      const msg = status === 503
+        ? (err.response?.data?.error || 'AI service unavailable: API key not configured.')
+        : (err.response?.data?.error || `${config.title} failed`);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

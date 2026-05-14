@@ -66,6 +66,26 @@ const features = [
     desc: 'AI-driven customer segmentation for targeted marketing and personalized experiences.',
     category: 'Personalization'
   },
+  {
+    key: 'customer-ltv', icon: FiTrendingUp, title: 'Customer LTV Predictor',
+    desc: 'Predict customer lifetime value with acquisition spend cap recommendations.',
+    category: 'Analytics'
+  },
+  {
+    key: 'unboxing-arrangement', icon: FiBox, title: 'Unboxing Arrangement',
+    desc: 'AI-suggested physical layout and reveal sequence for the unboxing experience.',
+    category: 'Optimization'
+  },
+  {
+    key: 'competitor-price-monitor', icon: FiDollarSign, title: 'Competitor Price Monitor',
+    desc: 'Compare our box vs. competitors and recommend a pricing posture.',
+    category: 'Analytics'
+  },
+  {
+    key: 'preference-bandit', icon: FiActivity, title: 'Preference Bandit',
+    desc: 'Bandit-style scoring step over candidate boxes for preference learning.',
+    category: 'Personalization'
+  },
 ];
 
 export default function AICenter() {

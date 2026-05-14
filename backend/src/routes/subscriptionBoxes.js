@@ -81,6 +81,56 @@ router.put('/:id', async (req, res) => {
   }
 });
 
+// POST /api/subscription-boxes/:id/apply-curation - Apply AI curated product list
+router.post('/:id/apply-curation', async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { selected_products } = req.body; // [{ product_id, quantity }]
+    if (!Array.isArray(selected_products) || selected_products.length === 0) {
+      return res.status(400).json({ error: 'selected_products array required' });
+    }
+
+    const boxResult = await client.query('SELECT * FROM subscription_boxes WHERE id = $1', [req.params.id]);
+    if (boxResult.rows.length === 0) return res.status(404).json({ error: 'Box not found' });
+
+    await client.query('BEGIN');
+
+    // Remove existing box_items for this box
+    await client.query('DELETE FROM box_items WHERE box_id = $1', [req.params.id]);
+
+    // Insert new box_items
+    for (const item of selected_products) {
+      await client.query(
+        'INSERT INTO box_items (box_id, product_id, quantity) VALUES ($1, $2, $3)',
+        [req.params.id, item.product_id, item.quantity || 1]
+      );
+    }
+
+    // Update items_count
+    await client.query(
+      'UPDATE subscription_boxes SET items_count = $1 WHERE id = $2',
+      [selected_products.length, req.params.id]
+    );
+
+    await client.query('COMMIT');
+
+    // Return updated box with items
+    const updatedBox = await pool.query('SELECT * FROM subscription_boxes WHERE id = $1', [req.params.id]);
+    const items = await pool.query(
+      `SELECT bi.quantity, p.id AS product_id, p.name, p.price, p.category FROM box_items bi JOIN products p ON bi.product_id = p.id WHERE bi.box_id = $1`,
+      [req.params.id]
+    );
+
+    res.json({ box: updatedBox.rows[0], items: items.rows, message: `Applied ${selected_products.length} products to box` });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('Error applying curation:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    client.release();
+  }
+});
+
 // DELETE /api/subscription-boxes/:id
 router.delete('/:id', async (req, res) => {
   try {
