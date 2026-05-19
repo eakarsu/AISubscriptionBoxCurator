@@ -17,6 +17,7 @@ const managementNav = [
   { to: '/customers', label: 'Customers', icon: FiUsers },
   { to: '/orders', label: 'Orders', icon: FiShoppingCart },
   { to: '/feedback', label: 'Feedback', icon: FiMessageSquare },
+  { to: '/custom-views', label: 'Subscription Analytics', icon: FiPieChart },
 ];
 
 const aiNav = [

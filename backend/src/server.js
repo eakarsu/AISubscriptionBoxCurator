@@ -84,6 +84,9 @@ app.use('/api/gap-no-webhooks-or-notifications', require('./routes/gapNoWebhooks
 app.use('/api/gap-no-audit-logging', require('./routes/gapNoAuditLogging'));
 app.use('/api/gap-no-payment-processor-integration', require('./routes/gapNoPaymentProcessorIntegration'));
 
+// === Custom Views (Subscription Analytics) ===
+app.use('/api/custom-views', require('./routes/customViews'));
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

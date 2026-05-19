@@ -16,6 +16,7 @@ import AICenter from './pages/AICenter';
 import AIFeaturePage from './pages/AIFeaturePage';
 import QuizOnboarding from './pages/QuizOnboarding';
 import ChurnDashboard from './pages/ChurnDashboard';
+import CustomViewsPage from './pages/CustomViewsPage';
 // === Batch 08 Gaps & Frontend Mounts ===
 import CfSeasonalDemandForecastingForInventorySpikesAround from './pages/CfSeasonalDemandForecastingForInventorySpikesAround'
 import CfUnboxingExperienceOptimizationWithAiSuggestedProduct from './pages/CfUnboxingExperienceOptimizationWithAiSuggestedProduct'
@@ -34,6 +35,11 @@ import GapNoGiftSubscriptionWorkflow from './pages/GapNoGiftSubscriptionWorkflow
 import GapNoWebhooksOrNotifications from './pages/GapNoWebhooksOrNotifications'
 import GapNoAuditLogging from './pages/GapNoAuditLogging'
 import GapNoPaymentProcessorIntegration from './pages/GapNoPaymentProcessorIntegration'
+
+function ProtectedRoute({ children }) {
+  // Wrapping app already gates on the `user` state below; this stub keeps batch-08 routes valid.
+  return children;
+}
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -96,6 +102,7 @@ export default function App() {
           <Route path="/ai/:feature" element={<AIFeaturePage />} />
           <Route path="/quiz" element={<QuizOnboarding />} />
           <Route path="/churn" element={<ChurnDashboard />} />
+          <Route path="/custom-views" element={<CustomViewsPage />} />
           {/* // === Batch 08 Gaps & Frontend Mounts === */}
       <Route path="/cf-seasonal-demand-forecasting-for-inventory-spikes-around-holidays" element={<ProtectedRoute><CfSeasonalDemandForecastingForInventorySpikesAround /></ProtectedRoute>} />
       <Route path="/cf-unboxing-experience-optimization-with-ai-suggested-product-arrangement" element={<ProtectedRoute><CfUnboxingExperienceOptimizationWithAiSuggestedProduct /></ProtectedRoute>} />
