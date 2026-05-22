@@ -72,7 +72,7 @@ Return JSON: { "top_boxes": [{ "box_id": 0, "box_name": "", "match_score": 0, "m
       method: 'POST',
       headers: { 'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'anthropic/claude-3-5-sonnet-20241022',
+        model: process.env.OPENROUTER_MODEL || 'anthropic/claude-3-5-sonnet-20241022',
         messages: [
           { role: 'system', content: 'You are a subscription box recommendation specialist. Always respond with valid JSON.' },
           { role: 'user', content: prompt }

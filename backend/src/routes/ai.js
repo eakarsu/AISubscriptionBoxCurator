@@ -8,7 +8,8 @@ const aiRateLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 20,
   keyGenerator: (req) => req.user ? 'user:' + (req.user.id || req.user.userId) : req.ip,
-  message: { error: 'Too many AI requests, please try again later.' }
+  message: { error: 'Too many AI requests, please try again later.' },
+  validate: { keyGeneratorIpFallback: false }
 });
 
 async function callOpenRouter(systemPrompt, userPrompt) {
@@ -19,7 +20,7 @@ async function callOpenRouter(systemPrompt, userPrompt) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'anthropic/claude-3-5-sonnet-20241022',
+      model: process.env.OPENROUTER_MODEL || 'anthropic/claude-3-5-sonnet-20241022',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },

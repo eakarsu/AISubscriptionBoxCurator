@@ -17,6 +17,9 @@ import AIFeaturePage from './pages/AIFeaturePage';
 import QuizOnboarding from './pages/QuizOnboarding';
 import ChurnDashboard from './pages/ChurnDashboard';
 import CustomViewsPage from './pages/CustomViewsPage';
+import CodexCustomVizFeature from './pages/CodexCustomVizFeature';
+import CodexOperationsFeature from './pages/CodexOperationsFeature';
+
 // === Batch 08 Gaps & Frontend Mounts ===
 import CfSeasonalDemandForecastingForInventorySpikesAround from './pages/CfSeasonalDemandForecastingForInventorySpikesAround'
 import CfUnboxingExperienceOptimizationWithAiSuggestedProduct from './pages/CfUnboxingExperienceOptimizationWithAiSuggestedProduct'
@@ -88,6 +91,9 @@ export default function App() {
       <Sidebar user={user} onLogout={handleLogout} />
       <main className="main-content">
         <Routes>
+        <Route path="/codex/custom-viz" element={<ProtectedRoute><CodexCustomVizFeature /></ProtectedRoute>} />
+        <Route path="/codex/operations" element={<ProtectedRoute><CodexOperationsFeature /></ProtectedRoute>} />
+
           <Route path="/" element={<Dashboard user={user} />} />
           <Route path="/subscription-boxes" element={<SubscriptionBoxes />} />
           <Route path="/subscription-boxes/:id" element={<BoxDetail />} />
