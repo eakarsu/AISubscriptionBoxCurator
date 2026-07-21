@@ -27,14 +27,6 @@ export default function Login({ onLogin }) {
     }
   };
 
-  const handleDemoLogin = () => {
-    setEmail('admin@example.com');
-    setPassword('password123');
-    setTimeout(() => {
-      document.getElementById('login-form').requestSubmit();
-    }, 100);
-  };
-
   return (
     <div className="login-page">
       <div className="login-card">
@@ -74,9 +66,6 @@ export default function Login({ onLogin }) {
           </div>
           <button type="submit" className="btn btn-primary btn-block btn-lg" disabled={loading} style={{ marginBottom: 12 }}>
             {loading ? <div className="spinner spinner-sm" /> : 'Sign In'}
-          </button>
-          <button type="button" className="btn btn-demo btn-block" onClick={handleDemoLogin}>
-            Demo Login
           </button>
         </form>
       </div>

@@ -2,7 +2,15 @@ require('dotenv').config({ path: require('path').join(__dirname, '../../.env') }
 const bcrypt = require('bcryptjs');
 const pool = require('./db');
 
+function requireDestructiveSeed() {
+  if (process.env.ALLOW_DESTRUCTIVE_SEED !== '1') throw new Error('Set ALLOW_DESTRUCTIVE_SEED=1 to reset and seed the database');
+  if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is required');
+  if ((process.env.SEED_ADMIN_PASSWORD || '').length < 12) throw new Error('SEED_ADMIN_PASSWORD must contain at least 12 characters');
+  return process.env.SEED_ADMIN_PASSWORD;
+}
+
 async function seed() {
+  const seedPassword = requireDestructiveSeed();
   const client = await pool.connect();
   try {
     console.log('Dropping existing tables...');
@@ -94,8 +102,8 @@ async function seed() {
 
     // Seed users
     console.log('Seeding users...');
-    const adminHash = await bcrypt.hash('password123', 10);
-    const userHash = await bcrypt.hash('password123', 10);
+    const adminHash = await bcrypt.hash(seedPassword, 12);
+    const userHash = await bcrypt.hash(seedPassword, 12);
     await client.query(`
       INSERT INTO users (email, password, name, role) VALUES
       ('admin@example.com', $1, 'Admin User', 'admin'),

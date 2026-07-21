@@ -1,177 +1,77 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
 
-# ============================================
-# AI Subscription Box Curator - Start Script
-# ============================================
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ENV_FILE="$ROOT_DIR/.env"
+API_DIR="$ROOT_DIR/backend"
+UI_DIR="$ROOT_DIR/frontend"
+MIGRATION_DIR="$ROOT_DIR/backend/src/migrations"
 
-set -e
-
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-PURPLE='\033[0;35m'
-CYAN='\033[0;36m'
-NC='\033[0m' # No Color
-
-PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
-
-echo -e "${PURPLE}============================================${NC}"
-echo -e "${PURPLE}  AI Subscription Box Curator${NC}"
-echo -e "${PURPLE}============================================${NC}"
-echo ""
-
-# Load .env
-if [ -f "$PROJECT_DIR/.env" ]; then
-    export $(grep -v '^#' "$PROJECT_DIR/.env" | xargs)
-    echo -e "${GREEN}✓ Loaded .env file${NC}"
-else
-    echo -e "${RED}✗ .env file not found! Please create one.${NC}"
-    exit 1
-fi
-
-BACKEND_PORT=${BACKEND_PORT:-3001}
-FRONTEND_PORT=${FRONTEND_PORT:-3000}
-
-# ============================================
-# Clean up used ports
-# ============================================
-echo -e "\n${YELLOW}Cleaning up ports...${NC}"
-
-cleanup_port() {
-    local port=$1
-    local pids=$(lsof -ti :$port 2>/dev/null || true)
-    if [ -n "$pids" ]; then
-        echo -e "${YELLOW}  Killing processes on port $port: $pids${NC}"
-        echo "$pids" | xargs kill -9 2>/dev/null || true
-        sleep 1
-    else
-        echo -e "${GREEN}  Port $port is free${NC}"
-    fi
+read_env() {
+  awk -F= -v key="$1" '$0 !~ /^[[:space:]]*#/ && $1 == key { value=substr($0,index($0,"=")+1); gsub(/^[[:space:]]+|[[:space:]]+$/, "", value); gsub(/^["\047]|["\047]$/, "", value); print value; exit }' "$ENV_FILE"
 }
 
-cleanup_port $BACKEND_PORT
-cleanup_port $FRONTEND_PORT
-
-# ============================================
-# Check PostgreSQL
-# ============================================
-echo -e "\n${YELLOW}Checking PostgreSQL...${NC}"
-
-if command -v pg_isready &> /dev/null; then
-    if pg_isready -h ${DB_HOST:-localhost} -p ${DB_PORT:-5432} &> /dev/null; then
-        echo -e "${GREEN}✓ PostgreSQL is running${NC}"
-    else
-        echo -e "${RED}✗ PostgreSQL is not running. Please start it first.${NC}"
-        echo -e "${YELLOW}  Try: brew services start postgresql${NC}"
-        exit 1
-    fi
-else
-    echo -e "${YELLOW}⚠ pg_isready not found, assuming PostgreSQL is running${NC}"
-fi
-
-# ============================================
-# Create database if not exists
-# ============================================
-echo -e "\n${YELLOW}Setting up database...${NC}"
-
-DB_NAME=${DB_NAME:-ai_sub_box_curator}
-DB_USER=${DB_USER:-postgres}
-
-if psql -U "$DB_USER" -h ${DB_HOST:-localhost} -p ${DB_PORT:-5432} -lqt 2>/dev/null | cut -d \| -f 1 | grep -qw "$DB_NAME"; then
-    echo -e "${GREEN}✓ Database '$DB_NAME' exists${NC}"
-else
-    echo -e "${YELLOW}  Creating database '$DB_NAME'...${NC}"
-    createdb -U "$DB_USER" -h ${DB_HOST:-localhost} -p ${DB_PORT:-5432} "$DB_NAME" 2>/dev/null || {
-        echo -e "${YELLOW}  Trying with default user...${NC}"
-        createdb "$DB_NAME" 2>/dev/null || {
-            echo -e "${RED}✗ Could not create database. Please create it manually:${NC}"
-            echo -e "${CYAN}  createdb $DB_NAME${NC}"
-            exit 1
-        }
-    }
-    echo -e "${GREEN}✓ Database '$DB_NAME' created${NC}"
-fi
-
-# ============================================
-# Install dependencies
-# ============================================
-echo -e "\n${YELLOW}Installing dependencies...${NC}"
-
-cd "$PROJECT_DIR/backend"
-if [ ! -d "node_modules" ]; then
-    echo -e "${CYAN}  Installing backend dependencies...${NC}"
-    npm install --silent 2>&1 | tail -1
-else
-    echo -e "${GREEN}  Backend dependencies already installed${NC}"
-fi
-
-cd "$PROJECT_DIR/frontend"
-if [ ! -d "node_modules" ]; then
-    echo -e "${CYAN}  Installing frontend dependencies...${NC}"
-    npm install --silent 2>&1 | tail -1
-else
-    echo -e "${GREEN}  Frontend dependencies already installed${NC}"
-fi
-
-# ============================================
-# Seed database
-# ============================================
-echo -e "\n${YELLOW}Seeding database...${NC}"
-cd "$PROJECT_DIR/backend"
-node src/seed.js
-echo -e "${GREEN}✓ Database seeded successfully${NC}"
-
-# ============================================
-# Start services with hot reload
-# ============================================
-echo -e "\n${BLUE}============================================${NC}"
-echo -e "${BLUE}  Starting services...${NC}"
-echo -e "${BLUE}============================================${NC}"
-
-# Cleanup function for graceful shutdown
-cleanup() {
-    echo -e "\n${YELLOW}Shutting down...${NC}"
-    kill $BACKEND_PID 2>/dev/null || true
-    kill $FRONTEND_PID 2>/dev/null || true
-    cleanup_port $BACKEND_PORT
-    cleanup_port $FRONTEND_PORT
-    echo -e "${GREEN}✓ All services stopped${NC}"
-    exit 0
+load_env_key() {
+  local key="$1" parsed
+  [ -n "${!key-}" ] && return 0
+  [ -f "$ENV_FILE" ] || return 0
+  parsed="$(read_env "$key")"
+  [ -z "$parsed" ] || export "$key=$parsed"
 }
 
-trap cleanup SIGINT SIGTERM
+for key in DATABASE_URL JWT_SECRET GOVERNANCE_TENANT_ID OPENROUTER_API_KEY ENABLE_GENERATED_FEATURES ALLOW_SCHEMA_MIGRATION ALLOW_DESTRUCTIVE_SEED BACKEND_PORT FRONTEND_PORT SEED_ADMIN_PASSWORD; do
+  load_env_key "$key"
+done
 
-# Start backend with nodemon (hot reload)
-echo -e "${CYAN}  Starting backend on port $BACKEND_PORT (with hot reload)...${NC}"
-cd "$PROJECT_DIR/backend"
-npx nodemon src/server.js &
-BACKEND_PID=$!
+BACKEND_PORT="${BACKEND_PORT:-3001}"
+FRONTEND_PORT="${FRONTEND_PORT:-3000}"
 
-# Wait for backend to be ready
-sleep 2
+fail() {
+  printf 'error: %s\n' "$*" >&2
+  exit 1
+}
 
-# Start frontend with Vite (hot reload built-in)
-echo -e "${CYAN}  Starting frontend on port $FRONTEND_PORT (with hot reload)...${NC}"
-cd "$PROJECT_DIR/frontend"
-npx vite --port $FRONTEND_PORT &
-FRONTEND_PID=$!
+check_config() {
+  local jwt_secret="${JWT_SECRET:-}"
+  command -v node >/dev/null || fail "node is required"
+  command -v npm >/dev/null || fail "npm is required"
+  [ -n "${DATABASE_URL:-}" ] || fail "DATABASE_URL is required"
+  [ -n "${GOVERNANCE_TENANT_ID:-}" ] || fail "GOVERNANCE_TENANT_ID is required"
+  [ "${#jwt_secret}" -ge 32 ] || fail "JWT_SECRET must contain at least 32 characters"
+  case "$DATABASE_URL" in
+    *example*|*changeme*|*password@*) fail "DATABASE_URL still contains a placeholder" ;;
+  esac
+  printf 'configuration valid for tenant %s\n' "$GOVERNANCE_TENANT_ID"
+}
 
-sleep 2
+migrate() {
+  check_config
+  [ "${ALLOW_SCHEMA_MIGRATION:-0}" = "1" ] || fail "set ALLOW_SCHEMA_MIGRATION=1 for the explicit migration command"
+  command -v psql >/dev/null || fail "psql is required for migrations"
+  found=0
+  for migration in "$MIGRATION_DIR"/*.sql; do
+    [ -f "$migration" ] || continue
+    found=1
+    psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$migration"
+  done
+  [ "$found" = "1" ] || fail "no migrations found in $MIGRATION_DIR"
+}
 
-echo -e "\n${GREEN}============================================${NC}"
-echo -e "${GREEN}  🚀 Application is running!${NC}"
-echo -e "${GREEN}============================================${NC}"
-echo -e ""
-echo -e "  ${CYAN}Frontend:${NC}  http://localhost:$FRONTEND_PORT"
-echo -e "  ${CYAN}Backend:${NC}   http://localhost:$BACKEND_PORT"
-echo -e "  ${CYAN}API:${NC}       http://localhost:$BACKEND_PORT/api"
-echo -e ""
-echo -e "  ${YELLOW}Login:${NC}     admin@example.com / password123"
-echo -e ""
-echo -e "  ${YELLOW}Press Ctrl+C to stop all services${NC}"
-echo -e ""
+start_services() {
+  check_config
+  [ -d "$API_DIR/node_modules" ] || fail "backend dependencies are missing; install them explicitly"
+  [ -d "$UI_DIR/node_modules" ] || fail "frontend dependencies are missing; install them explicitly"
+  (cd "$API_DIR" && PORT="$BACKEND_PORT" node src/server.js) &
+  api_pid=$!
+  (cd "$UI_DIR" && npm run dev -- --host 127.0.0.1 --port "$FRONTEND_PORT") &
+  ui_pid=$!
+  trap 'kill "$api_pid" "$ui_pid" 2>/dev/null || true; wait "$api_pid" "$ui_pid" 2>/dev/null || true' INT TERM EXIT
+  wait "$api_pid" "$ui_pid"
+}
 
-# Wait for child processes
-wait
+case "${1:-check}" in
+  check) check_config ;;
+  migrate) migrate ;;
+  start) start_services ;;
+  *) fail "usage: $0 {check|migrate|start}" ;;
+esac

@@ -1,0 +1,30 @@
+name: Governance controls
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  controls:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Syntax
+        run: |
+          node --check backend/src/server.js
+          node --check backend/src/governance/index.js
+          node --check backend/src/governance/domain.js
+          node --check backend/src/governance/router.js
+          node --check backend/src/governance/policy.js
+          node --check backend/src/routes/auth.js
+          node --check backend/src/middleware/auth.js
+          node --check backend/src/seed.js
+          bash -n start.sh
+      - name: Governance and workflow tests
+        run: node --test backend/src/governance/tests/*.test.js

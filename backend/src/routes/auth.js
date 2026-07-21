@@ -24,9 +24,9 @@ router.post('/login', async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
+      { id: user.id, email: user.email, role: user.role, tenantId: process.env.GOVERNANCE_TENANT_ID, subjectIds: [`actor:user:${user.id}`] },
       process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+      { algorithm: 'HS256', expiresIn: '24h' }
     );
 
     res.json({
@@ -48,8 +48,8 @@ router.post('/login', async (req, res) => {
 router.post('/register', async (req, res) => {
   try {
     const { email, password, name } = req.body;
-    if (!email || !password || !name) {
-      return res.status(400).json({ error: 'Email, password, and name are required' });
+    if (!email || !name || typeof password !== 'string' || password.length < 12) {
+      return res.status(400).json({ error: 'Email, name, and a password of at least 12 characters are required' });
     }
 
     const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
@@ -65,9 +65,9 @@ router.post('/register', async (req, res) => {
 
     const user = result.rows[0];
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
+      { id: user.id, email: user.email, role: user.role, tenantId: process.env.GOVERNANCE_TENANT_ID, subjectIds: [`actor:user:${user.id}`] },
       process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+      { algorithm: 'HS256', expiresIn: '24h' }
     );
 
     res.status(201).json({

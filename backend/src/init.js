@@ -2,6 +2,7 @@ require('dotenv').config({ path: require('path').join(__dirname, '../../.env') }
 const pool = require('./db');
 
 async function init() {
+  if (process.env.ALLOW_SCHEMA_MIGRATION !== '1' || !process.env.DATABASE_URL) throw new Error('ALLOW_SCHEMA_MIGRATION=1 and DATABASE_URL are required');
   const client = await pool.connect();
   try {
     console.log('Running non-destructive schema init...');
