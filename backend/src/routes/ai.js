@@ -13,26 +13,36 @@ const aiRateLimiter = rateLimit({
 });
 
 async function callOpenRouter(systemPrompt, userPrompt) {
-  const response = await fetch((process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1') + '/chat/completions', {
+  const apiKey = process.env.OPENROUTER_API_KEY || '';
+  const model = process.env.OPENROUTER_MODEL || '';
+  const baseUrl = (process.env.OPENROUTER_BASE_URL || '').replace(/\/$/, '');
+  if (!apiKey) throw new Error('OPENROUTER_API_KEY is required');
+  if (!model) throw new Error('OPENROUTER_MODEL is required');
+  if (baseUrl !== 'https://openrouter.ai/api/v1') {
+    throw new Error('OPENROUTER_BASE_URL must be https://openrouter.ai/api/v1');
+  }
+  const response = await fetch(`${baseUrl}/chat/completions`, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+      'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: process.env.OPENROUTER_MODEL || 'anthropic/claude-3-5-sonnet-20241022',
+      model,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
       temperature: 0.7,
     }),
-    signal: AbortSignal.timeout(30000)
+    signal: AbortSignal.timeout(120000)
   });
 
   const data = await response.json();
-  if (data.error) throw new Error(data.error.message || 'OpenRouter API error');
-  return data.choices[0].message.content;
+  if (!response.ok || data.error) throw new Error(data.error?.message || `OpenRouter returned HTTP ${response.status}`);
+  const content = data.choices?.[0]?.message?.content || '';
+  if (!content.trim()) throw new Error('OpenRouter returned an empty response');
+  return content;
 }
 
 function parseAIJson(content) {
@@ -58,14 +68,10 @@ function requireKey(res) {
 }
 
 async function persistAIResult(userId, endpoint, inputData, result) {
-  try {
-    await pool.query(
-      'INSERT INTO ai_results (user_id, endpoint, input_data, result) VALUES ($1, $2, $3, $4)',
-      [userId, endpoint, JSON.stringify(inputData), JSON.stringify(result)]
-    );
-  } catch (err) {
-    console.error('Failed to persist AI result:', err.message);
-  }
+  await pool.query(
+    'INSERT INTO ai_results (user_id, endpoint, input_data, result) VALUES ($1, $2, $3, $4)',
+    [userId, endpoint, JSON.stringify(inputData), JSON.stringify(result)]
+  );
 }
 
 // 1. POST /api/ai/curate-box

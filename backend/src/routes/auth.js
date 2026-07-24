@@ -3,6 +3,7 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const pool = require('../db');
+const auth = require('../middleware/auth');
 
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
@@ -82,6 +83,21 @@ router.post('/register', async (req, res) => {
   } catch (err) {
     console.error('Register error:', err);
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// GET /api/auth/me -- resolve the signed-in identity from durable storage.
+router.get('/me', auth, async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT id, email, name, role, created_at FROM users WHERE id = $1 LIMIT 1',
+      [req.user.id]
+    );
+    if (!result.rows.length) return res.status(401).json({ error: 'Session user no longer exists' });
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Session identity error:', err);
+    res.status(500).json({ error: 'Unable to verify persisted session' });
   }
 });
 

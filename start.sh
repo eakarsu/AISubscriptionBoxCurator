@@ -19,7 +19,7 @@ load_env_key() {
   [ -z "$parsed" ] || export "$key=$parsed"
 }
 
-for key in DATABASE_URL JWT_SECRET GOVERNANCE_TENANT_ID OPENROUTER_API_KEY ENABLE_GENERATED_FEATURES ALLOW_SCHEMA_MIGRATION ALLOW_DESTRUCTIVE_SEED BACKEND_PORT FRONTEND_PORT SEED_ADMIN_PASSWORD; do
+for key in DATABASE_URL JWT_SECRET GOVERNANCE_TENANT_ID OPENROUTER_API_KEY OPENROUTER_MODEL OPENROUTER_BASE_URL ENABLE_GENERATED_FEATURES ALLOW_SCHEMA_MIGRATION ALLOW_DESTRUCTIVE_SEED BACKEND_PORT FRONTEND_PORT SEED_ADMIN_PASSWORD; do
   load_env_key "$key"
 done
 
@@ -69,7 +69,7 @@ start_services() {
   wait "$api_pid" "$ui_pid"
 }
 
-case "${1:-check}" in
+case "${1:-start}" in
   check) check_config ;;
   migrate) migrate ;;
   start) start_services ;;

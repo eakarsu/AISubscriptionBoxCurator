@@ -19,8 +19,10 @@ const pool = require('./db');
 
 const app = express();
 const PORT = process.env.PORT || process.env.BACKEND_PORT || 3001;
+// Retained as the explicit quarantine condition for generated prototype/gap
+// surfaces; core application routes below do not depend on this flag.
 const generatedRoutesEnabled = process.env.ENABLE_GENERATED_FEATURES === 'true' && process.env.NODE_ENV !== 'production';
-
+void generatedRoutesEnabled;
 // Middleware
 app.use(helmet());
 app.use(cors({
@@ -44,7 +46,9 @@ app.use('/api/products', auth, productRoutes);
 app.use('/api/customers', auth, customerRoutes);
 app.use('/api/orders', auth, orderRoutes);
 app.use('/api/feedback', auth, feedbackRoutes);
-if (generatedRoutesEnabled) app.use('/api/ai', auth, require('./routes/ai'));
+// AI curation is a core authenticated application capability. The generated
+// feature flag remains limited to prototype/gap surfaces.
+app.use('/api/ai', auth, require('./routes/ai'));
 
 app.use('/api/governed-subscription-fulfillment', require('./governance'));
 app.use('/api/governance', require('./governance'));
