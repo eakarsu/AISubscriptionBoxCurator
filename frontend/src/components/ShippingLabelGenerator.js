@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import api from '../services/api';
+import api, { responseRows } from '../services/api';
 
 const CARRIERS = ['USPS', 'UPS', 'FedEx'];
 const SERVICE_TIERS = {
@@ -27,7 +27,7 @@ export default function ShippingLabelGenerator() {
       try {
         const r = await api.get('/api/customers?limit=50');
         if (!cancelled) {
-          const list = Array.isArray(r.data) ? r.data : (r.data?.data || []);
+          const list = responseRows(r.data);
           setSubscribers(list);
           if (list.length) setSubscriberId(String(list[0].id));
         }

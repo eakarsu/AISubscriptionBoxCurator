@@ -1,3 +1,5 @@
+
+import FullAIExamples, { useFullAIExamples } from "../components/FullAIExamples.jsx";
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
@@ -5,7 +7,7 @@ import {
   FiTrendingUp, FiHeart, FiEdit3, FiStar, FiActivity, FiPieChart, FiSend
 } from 'react-icons/fi';
 import toast from 'react-hot-toast';
-import api from '../services/api';
+import api, { responseRows } from '../services/api';
 import AIResultDisplay from '../components/AIResultDisplay';
 
 const featureConfig = {
@@ -194,7 +196,15 @@ const featureConfig = {
   },
 };
 
+const structuredExamples = {
+  competitors: '[{"name":"Wellness Box Co.","price":45,"items":8},{"name":"Care Parcel","price":52,"items":10}]',
+  arms: '[{"id":"A","pulls":12,"rewards":7},{"id":"B","pulls":3,"rewards":2}]',
+  candidates: '[{"id":"C","description":"Eco self-care box"}]',
+};
+
 export default function AIFeaturePage() {
+  const fullAIExamples = useFullAIExamples();
+
   const { feature } = useParams();
   const config = featureConfig[feature];
   const [formData, setFormData] = useState({});
@@ -213,13 +223,13 @@ export default function AIFeaturePage() {
   useEffect(() => {
     const fetchRefs = async () => {
       if (config?.needsCustomers) {
-        try { const r = await api.get('/api/customers'); setCustomers(r.data.data || r.data || []); } catch {}
+        try { const r = await api.get('/api/customers'); setCustomers(responseRows(r.data)); } catch {}
       }
       if (config?.needsProducts) {
-        try { const r = await api.get('/api/products'); setProducts(r.data.data || r.data || []); } catch {}
+        try { const r = await api.get('/api/products'); setProducts(responseRows(r.data)); } catch {}
       }
       if (config?.needsBoxes) {
-        try { const r = await api.get('/api/subscription-boxes'); setBoxes(r.data.data || r.data || []); } catch {}
+        try { const r = await api.get('/api/subscription-boxes'); setBoxes(responseRows(r.data)); } catch {}
       }
     };
     fetchRefs();
@@ -227,7 +237,7 @@ export default function AIFeaturePage() {
 
   if (!config) {
     return (
-      <div>
+      <div data-full-ai-workspace="AIFeaturePage"><FullAIExamples controller={fullAIExamples} disabled={Boolean(loading)} />
         <Link to="/ai-center" className="back-link"><FiArrowLeft /> Back to AI Center</Link>
         <div className="card"><div className="empty-state"><h3>Feature not found</h3><p>This AI feature does not exist.</p></div></div>
       </div>
@@ -292,38 +302,38 @@ export default function AIFeaturePage() {
     switch (field.type) {
       case 'select':
         return (
-          <select className="form-select" value={formData[field.name] || ''} onChange={(e) => updateField(field.name, e.target.value)}>
+          <select className="form-select" value={formData[field.name] || ''} onChange={(e) => updateField(field.name, e.target.value)} data-full-ai-field={fullAIExamples.bind({ current: formData[field.name] || '', change: (e) => updateField(field.name, e.target.value), label: "formData[field.name]", manual: false, json: false }, "p1-12866", [field.name].join(":"))}>
             <option value="">Select {field.label}</option>
             {field.options.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
           </select>
         );
       case 'textarea':
         return (
-          <textarea className="form-textarea" value={formData[field.name] || ''} onChange={(e) => updateField(field.name, e.target.value)} placeholder={field.placeholder} />
+          <textarea className="form-textarea" value={formData[field.name] || ''} onChange={(e) => updateField(field.name, e.target.value)} placeholder={field.placeholder} data-full-ai-field={fullAIExamples.bind({ current: formData[field.name] || '', change: (e) => updateField(field.name, e.target.value), label: field.name, sample: structuredExamples[field.name], manual: false, json: Boolean(structuredExamples[field.name]) }, "p1-13219", [field.name].join(":"))} />
         );
       case 'customer-select':
         return (
-          <select className="form-select" value={formData[field.name] || ''} onChange={(e) => updateField(field.name, e.target.value)}>
+          <select className="form-select" value={formData[field.name] || ''} onChange={(e) => updateField(field.name, e.target.value)} data-full-ai-field={fullAIExamples.bind({ current: formData[field.name] || '', change: (e) => updateField(field.name, e.target.value), label: "formData[field.name]", manual: false, json: false }, "p1-13451", [field.name].join(":"))}>
             <option value="">Select Customer</option>
             {customers.map((c) => <option key={c.id} value={c.id}>{c.name} ({c.email})</option>)}
           </select>
         );
       case 'product-select':
         return (
-          <select className="form-select" value={formData[field.name] || ''} onChange={(e) => updateField(field.name, e.target.value)}>
+          <select className="form-select" value={formData[field.name] || ''} onChange={(e) => updateField(field.name, e.target.value)} data-full-ai-field={fullAIExamples.bind({ current: formData[field.name] || '', change: (e) => updateField(field.name, e.target.value), label: "formData[field.name]", manual: false, json: false }, "p1-13816", [field.name].join(":"))}>
             <option value="">Select Product</option>
             {products.map((p) => <option key={p.id} value={p.id}>{p.name} - ${parseFloat(p.price || 0).toFixed(2)}</option>)}
           </select>
         );
       default:
         return (
-          <input className="form-input" type={field.type || 'text'} value={formData[field.name] || ''} onChange={(e) => updateField(field.name, e.target.value)} placeholder={field.placeholder} step={field.type === 'number' ? 'any' : undefined} />
+          <input className="form-input" type={field.type || 'text'} value={formData[field.name] || ''} onChange={(e) => updateField(field.name, e.target.value)} placeholder={field.placeholder} step={field.type === 'number' ? 'any' : undefined} data-full-ai-field={fullAIExamples.bind({ current: formData[field.name] || '', change: (e) => updateField(field.name, e.target.value), label: "formData[field.name]", manual: false, json: false }, "p1-14194", [field.name].join(":"))} />
         );
     }
   };
 
   return (
-    <div>
+    <div data-full-ai-workspace="AIFeaturePage"><FullAIExamples controller={fullAIExamples} disabled={Boolean(loading)} />
       <Link to="/ai-center" className="back-link"><FiArrowLeft /> Back to AI Center</Link>
 
       <div className="page-header">

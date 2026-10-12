@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiPlus, FiSearch, FiBox } from 'react-icons/fi';
 import toast from 'react-hot-toast';
-import api from '../services/api';
+import api, { responseRows } from '../services/api';
 import Modal from '../components/Modal';
 
 export default function SubscriptionBoxes() {
@@ -17,7 +17,7 @@ export default function SubscriptionBoxes() {
   const fetchBoxes = async () => {
     try {
       const res = await api.get('/api/subscription-boxes');
-      setBoxes(res.data.data || res.data || []);
+      setBoxes(responseRows(res.data));
     } catch (err) {
       toast.error('Failed to load subscription boxes');
     } finally {

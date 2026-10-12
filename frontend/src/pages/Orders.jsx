@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiPlus, FiSearch, FiShoppingCart } from 'react-icons/fi';
 import toast from 'react-hot-toast';
-import api from '../services/api';
+import api, { responseRows } from '../services/api';
 import Modal from '../components/Modal';
 
 export default function Orders() {
@@ -24,9 +24,9 @@ export default function Orders() {
         api.get('/api/customers'),
         api.get('/api/subscription-boxes'),
       ]);
-      if (ordersRes.status === 'fulfilled') setOrders(ordersRes.value.data.data || ordersRes.value.data || []);
-      if (customersRes.status === 'fulfilled') setCustomers(customersRes.value.data.data || customersRes.value.data || []);
-      if (boxesRes.status === 'fulfilled') setBoxes(boxesRes.value.data.data || boxesRes.value.data || []);
+      if (ordersRes.status === 'fulfilled') setOrders(responseRows(ordersRes.value.data));
+      if (customersRes.status === 'fulfilled') setCustomers(responseRows(customersRes.value.data));
+      if (boxesRes.status === 'fulfilled') setBoxes(responseRows(boxesRes.value.data));
     } catch (err) { toast.error('Failed to load orders'); } finally { setLoading(false); }
   };
 

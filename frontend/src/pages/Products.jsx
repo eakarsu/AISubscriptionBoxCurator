@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiPlus, FiSearch, FiStar, FiPackage } from 'react-icons/fi';
 import toast from 'react-hot-toast';
-import api from '../services/api';
+import api, { responseRows } from '../services/api';
 import Modal from '../components/Modal';
 
 function Stars({ rating }) {
@@ -25,7 +25,7 @@ export default function Products() {
   const fetchProducts = async () => {
     try {
       const res = await api.get('/api/products');
-      setProducts(res.data.data || res.data || []);
+      setProducts(responseRows(res.data));
     } catch (err) {
       toast.error('Failed to load products');
     } finally {

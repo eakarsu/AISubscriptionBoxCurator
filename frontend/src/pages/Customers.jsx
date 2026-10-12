@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiPlus, FiSearch, FiUsers } from 'react-icons/fi';
 import toast from 'react-hot-toast';
-import api from '../services/api';
+import api, { responseRows } from '../services/api';
 import Modal from '../components/Modal';
 
 export default function Customers() {
@@ -17,7 +17,7 @@ export default function Customers() {
   const fetchCustomers = async () => {
     try {
       const res = await api.get('/api/customers');
-      setCustomers(res.data.data || res.data || []);
+      setCustomers(responseRows(res.data));
     } catch (err) { toast.error('Failed to load customers'); } finally { setLoading(false); }
   };
 

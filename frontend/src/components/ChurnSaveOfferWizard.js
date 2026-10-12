@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import api from '../services/api';
+import api, { responseRows } from '../services/api';
 
 const STEPS = [
   { key: 'subscriber', label: 'Select Subscriber' },
@@ -44,7 +44,7 @@ export default function ChurnSaveOfferWizard() {
       try {
         // Pull a list of customers and treat lowest-LTV / churned status first as at-risk
         const r = await api.get('/api/customers?limit=50');
-        const list = Array.isArray(r.data) ? r.data : (r.data?.data || []);
+        const list = responseRows(r.data);
         const sorted = [...list].sort((a, b) => {
           const sA = (a.status || '').toLowerCase() === 'cancelled' || (a.status || '').toLowerCase() === 'churned' ? 0 : 1;
           const sB = (b.status || '').toLowerCase() === 'cancelled' || (b.status || '').toLowerCase() === 'churned' ? 0 : 1;
@@ -57,7 +57,7 @@ export default function ChurnSaveOfferWizard() {
         }
         try {
           const br = await api.get('/api/subscription-boxes?limit=30');
-          const blist = Array.isArray(br.data) ? br.data : (br.data?.data || []);
+          const blist = responseRows(br.data);
           if (!cancelled) {
             setBoxes(blist);
             if (blist.length) setSwapBoxId(String(blist[0].id));

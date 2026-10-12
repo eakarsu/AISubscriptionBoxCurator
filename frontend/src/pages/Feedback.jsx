@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FiPlus, FiSearch, FiStar, FiMessageSquare } from 'react-icons/fi';
 import toast from 'react-hot-toast';
-import api from '../services/api';
+import api, { responseRows } from '../services/api';
 import Modal from '../components/Modal';
 
 function Stars({ rating }) {
@@ -28,9 +28,9 @@ export default function Feedback() {
         api.get('/api/customers'),
         api.get('/api/subscription-boxes'),
       ]);
-      if (fbRes.status === 'fulfilled') setFeedbacks(fbRes.value.data.data || fbRes.value.data || []);
-      if (custRes.status === 'fulfilled') setCustomers(custRes.value.data.data || custRes.value.data || []);
-      if (boxRes.status === 'fulfilled') setBoxes(boxRes.value.data.data || boxRes.value.data || []);
+      if (fbRes.status === 'fulfilled') setFeedbacks(responseRows(fbRes.value.data));
+      if (custRes.status === 'fulfilled') setCustomers(responseRows(custRes.value.data));
+      if (boxRes.status === 'fulfilled') setBoxes(responseRows(boxRes.value.data));
     } catch (err) { toast.error('Failed to load feedback'); } finally { setLoading(false); }
   };
 

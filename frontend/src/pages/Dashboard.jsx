@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiBox, FiPackage, FiUsers, FiShoppingCart, FiCpu, FiArrowRight } from 'react-icons/fi';
-import api from '../services/api';
+import api, { responseRows } from '../services/api';
 
 export default function Dashboard({ user }) {
   const navigate = useNavigate();
@@ -19,14 +19,14 @@ export default function Dashboard({ user }) {
           api.get('/api/orders'),
         ]);
         setStats({
-          boxes: boxesRes.status === 'fulfilled' ? (boxesRes.value.data.data || boxesRes.value.data || []).length : 0,
-          products: productsRes.status === 'fulfilled' ? (productsRes.value.data.data || productsRes.value.data || []).length : 0,
-          customers: customersRes.status === 'fulfilled' ? (customersRes.value.data.data || customersRes.value.data || []).length : 0,
-          orders: ordersRes.status === 'fulfilled' ? (ordersRes.value.data.data || ordersRes.value.data || []).length : 0,
+          boxes: boxesRes.status === 'fulfilled' ? (responseRows(boxesRes.value.data)).length : 0,
+          products: productsRes.status === 'fulfilled' ? (responseRows(productsRes.value.data)).length : 0,
+          customers: customersRes.status === 'fulfilled' ? (responseRows(customersRes.value.data)).length : 0,
+          orders: ordersRes.status === 'fulfilled' ? (responseRows(ordersRes.value.data)).length : 0,
         });
         if (ordersRes.status === 'fulfilled') {
-          const orders = ordersRes.value.data.data || ordersRes.value.data || [];
-          setRecentOrders(orders.slice(0, 5));
+          const orders = responseRows(ordersRes.value.data);
+          setRecentOrders(orders.slice(0, 15));
         }
       } catch (err) {
         console.error('Dashboard fetch error:', err);

@@ -34,7 +34,7 @@ export default function ChurnDashboard() {
     setLoading(false);
   };
 
-  const customers = data?.customers || [];
+  const customers = Array.isArray(data?.customers) ? data.customers : [];
   const filtered = filter === 'all' ? customers : customers.filter(c => c.churn_risk === filter);
   const highRisk = customers.filter(c => c.churn_risk === 'high').length;
   const midRisk = customers.filter(c => c.churn_risk === 'medium').length;

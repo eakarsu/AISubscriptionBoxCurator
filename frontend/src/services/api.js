@@ -1,5 +1,11 @@
 import axios from 'axios';
 
+// List routes return either rows directly or { data: rows, pagination }.
+export const responseRows = (payload) => {
+  const rows = Array.isArray(payload) ? payload : payload?.data;
+  return Array.isArray(rows) ? rows : [];
+};
+
 const api = axios.create({
   baseURL: '',
   headers: {
